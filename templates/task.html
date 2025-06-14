@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>오늘의 일정</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .task {
+      background: white;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .back-button {
+      margin-top: 20px;
+      display: block;
+      text-align: center;
+      color: blue;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="todayTitle">오늘의 일정</h1>
+  <div id="taskList">
+    <!-- 할 일 항목이 여기에 표시됩니다 -->
+  </div>
+  <div class="back-button" onclick="history.back()">← 뒤로 가기</div>
+
+  <script>
+    // 샘플 데이터: 실제 환경에서는 DB 또는 서버 API에서 받아와야 함
+    const allTasks = [
+      { title: "회의 준비", date: "2025-06-14" },
+      { title: "팀 미팅", date: "2025-06-14" },
+      { title: "과제 제출", date: "2025-06-15" }
+    ];
+
+    function loadTodayTasks() {
+      const today = new Date().toISOString().split('T')[0];
+      const taskList = document.getElementById("taskList");
+      const todayTasks = allTasks.filter(task => task.date === today);
+
+      if (todayTasks.length === 0) {
+        taskList.innerHTML = "<p>오늘의 일정이 없습니다.</p>";
+      } else {
+        todayTasks.forEach(task => {
+          const div = document.createElement("div");
+          div.className = "task";
+          div.textContent = task.title;
+          taskList.appendChild(div);
+        });
+      }
+
+      document.getElementById("todayTitle").textContent = `📅 ${today} 일정`;
+    }
+
+    loadTodayTasks();
+  </script>
+</body>
+</html>
