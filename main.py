@@ -103,8 +103,6 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 
-
-from fastapi import FastAPI
 import socket
 
 app = FastAPI()
