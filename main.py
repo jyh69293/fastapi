@@ -76,3 +76,26 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_schedule)
     return new_schedule
+
+
+from fastapi import HTTPException
+
+# 일정 완료 상태 업데이트 (체크박스)
+@app.patch("/schedule/{schedule_id}")
+def update_schedule_completion(schedule_id: int, is_completed: bool, db: Session = Depends(get_db)):
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    schedule.is_completed = is_completed
+    db.commit()
+    return {"message": "Updated"}
+
+# 일정 삭제
+@app.delete("/schedule/{schedule_id}")
+def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    db.delete(schedule)
+    db.commit()
+    return {"message": "Deleted"}
