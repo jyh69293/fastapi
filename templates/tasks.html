@@ -37,6 +37,23 @@
       padding: 5px 10px;
       cursor: pointer;
     }
+    .add-task {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .add-task input, .add-task button {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .add-task button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
     .back-button {
       margin-top: 20px;
       display: block;
@@ -49,6 +66,15 @@
 </head>
 <body>
   <h1>📅 {{ today }} 일정</h1>
+
+  <!-- ✅ 일정 추가 폼 -->
+  <div class="add-task">
+    <input type="text" id="newTitle" placeholder="할 일 제목">
+    <input type="datetime-local" id="newTime">
+    <button onclick="addTask()">추가</button>
+  </div>
+
+  <!-- ✅ 오늘의 일정 리스트 -->
   <div id="taskList">
     {% if tasks %}
       {% for task in tasks %}
@@ -64,6 +90,7 @@
       <p>오늘의 일정이 없습니다.</p>
     {% endif %}
   </div>
+
   <div class="back-button" onclick="history.back()">← 뒤로 가기</div>
 
   <script>
@@ -83,6 +110,34 @@
       }).then(res => {
         if (res.ok) location.reload();
         else alert("삭제 실패");
+      });
+    }
+
+    function addTask() {
+      const title = document.getElementById("newTitle").value;
+      const time = document.getElementById("newTime").value;
+
+      if (!title || !time) {
+        alert("제목과 시간을 입력해주세요.");
+        return;
+      }
+
+      const startTime = new Date(time);
+      const endDate = startTime.toISOString().split("T")[0];
+
+      fetch("/schedule/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "web_user",
+          title: title,
+          is_todo: true,
+          start_time: startTime.toISOString(),
+          end_date: endDate
+        })
+      }).then(res => {
+        if (res.ok) location.reload();
+        else alert("추가 실패");
       });
     }
   </script>
