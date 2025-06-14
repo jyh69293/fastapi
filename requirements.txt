@@ -29,3 +29,6 @@ uvloop==0.16.0
 watchgod==0.8.2
 websockets==10.3
 jinja2
+sqlalchemy
+python-multipart  # 폼 처리할 경우
+aiofiles          # 파일 업로드 처리할 경우
