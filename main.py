@@ -107,6 +107,7 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 
+
 @app.get("/get-local-ip")
 def get_local_ip():
     hostname = socket.gethostname()
