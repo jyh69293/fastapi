@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date, datetime
 import os
-
+import socket
 from models import Base, Schedule
 from database import engine, SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
@@ -103,9 +103,9 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 
-import socket
 
-app = FastAPI()
+
+
 
 @app.get("/get-local-ip")
 def get_local_ip():
