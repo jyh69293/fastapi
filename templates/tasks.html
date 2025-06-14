@@ -20,6 +20,22 @@
       padding: 12px;
       border-radius: 8px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .task span {
+      flex-grow: 1;
+      margin-left: 10px;
+    }
+    .task button {
+      margin-left: 10px;
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
     }
     .back-button {
       margin-top: 20px;
@@ -37,7 +53,11 @@
     {% if tasks %}
       {% for task in tasks %}
         <div class="task">
-          {{ task.title }}
+          <input type="checkbox" onchange="toggleComplete({{ task.id }}, this.checked)" {% if task.is_completed %}checked{% endif %}>
+          <span {% if task.is_completed %}style="text-decoration: line-through;"{% endif %}>
+            {{ task.title }}
+          </span>
+          <button onclick="deleteTask({{ task.id }})">삭제</button>
         </div>
       {% endfor %}
     {% else %}
@@ -45,5 +65,26 @@
     {% endif %}
   </div>
   <div class="back-button" onclick="history.back()">← 뒤로 가기</div>
+
+  <script>
+    function toggleComplete(id, isCompleted) {
+      fetch(`/schedule/${id}?is_completed=${isCompleted}`, {
+        method: "PATCH"
+      }).then(res => {
+        if (!res.ok) alert("업데이트 실패");
+        else location.reload();
+      });
+    }
+
+    function deleteTask(id) {
+      if (!confirm("정말 삭제하시겠습니까?")) return;
+      fetch(`/schedule/${id}`, {
+        method: "DELETE"
+      }).then(res => {
+        if (res.ok) location.reload();
+        else alert("삭제 실패");
+      });
+    }
+  </script>
 </body>
 </html>
