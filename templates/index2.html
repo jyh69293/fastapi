@@ -172,7 +172,7 @@
       alert(`${name} 버튼이 클릭되었습니다.`);
     }
 
-    function fetchClientIP() {
+     function fetchClientIP() {
     fetch("/get-client-ip")
       .then(res => res.json())
       .then(data => {
@@ -183,15 +183,12 @@
       });
   }
 
+  // ✅ 여기서 하나로 묶기
   window.onload = () => {
     updateTime();
-    fetchClientIP();  // 변경된 API 호출
-  };
+    fetchClientIP();  // 호출 정상화
     setInterval(updateTime, 1000);
-    window.onload = () => {
-      updateTime();
-      fetchLocalIP();  // IP 가져오기
-    };
+  };
   </script>
 </body>
 </html>
