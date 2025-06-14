@@ -172,17 +172,21 @@
       alert(`${name} 버튼이 클릭되었습니다.`);
     }
 
-    function fetchLocalIP() {
-      fetch("/get-local-ip")
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById("ipInfo").textContent = `📱 연결된 기기 IP: ${data.local_ip}`;
-        })
-        .catch(() => {
-          document.getElementById("ipInfo").textContent = "❌ 로컬 IP를 불러올 수 없습니다.";
-        });
-    }
+    function fetchClientIP() {
+    fetch("/get-client-ip")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("ipInfo").textContent = `🌐 접속자 IP: ${data.client_ip}`;
+      })
+      .catch(() => {
+        document.getElementById("ipInfo").textContent = "❌ 클라이언트 IP 조회 실패";
+      });
+  }
 
+  window.onload = () => {
+    updateTime();
+    fetchClientIP();  // 변경된 API 호출
+  };
     setInterval(updateTime, 1000);
     window.onload = () => {
       updateTime();
