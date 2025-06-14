@@ -8,7 +8,7 @@ import os
 from models import Base, Schedule
 from database import engine, SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
-
+from pydantic import BaseModel
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = FastAPI()
@@ -50,3 +50,29 @@ async def read_tasks(request: Request, db: Session = Depends(get_db)):
         "tasks": schedules,
         "today": today.isoformat()
     })
+
+class ScheduleCreate(BaseModel):
+    user_id: str
+    title: str
+    is_todo: bool
+    start_time: datetime
+    end_date: str  # YYYY-MM-DD
+
+@app.post("/schedule/")
+def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
+    if schedule.is_todo:
+        end_time = datetime.strptime(schedule.end_date + " 23:59:00", "%Y-%m-%d %H:%M:%S")
+    else:
+        end_time = datetime.strptime(schedule.end_date, "%Y-%m-%d %H:%M:%S")
+
+    new_schedule = Schedule(
+        user_id=schedule.user_id,
+        title=schedule.title,
+        is_todo=schedule.is_todo,
+        start_time=schedule.start_time,
+        end_time=end_time
+    )
+    db.add(new_schedule)
+    db.commit()
+    db.refresh(new_schedule)
+    return new_schedule
