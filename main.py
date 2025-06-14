@@ -99,3 +99,18 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
     db.delete(schedule)
     db.commit()
     return {"message": "Deleted"}
+
+
+
+
+
+from fastapi import FastAPI
+import socket
+
+app = FastAPI()
+
+@app.get("/get-local-ip")
+def get_local_ip():
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    return {"local_ip": local_ip}
