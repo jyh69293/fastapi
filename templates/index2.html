@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>스마트 디바이스 UI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #eaeaea;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      width: 100%;
+      max-width: 320px;
+      height: 100vh;
+      background: url('your-background-image.jpg') no-repeat center center / cover;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .top-bar {
+      font-size: 10px;
+      color: #ff6600;
+      text-align: right;
+    }
+
+    .date-section {
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .weather {
+      font-size: 12px;
+      margin: 5px 0;
+    }
+
+    .weather span {
+      display: block;
+    }
+
+    .time-section {
+      font-size: 40px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .time-label {
+      font-size: 18px;
+      margin-right: 5px;
+      vertical-align: top;
+    }
+
+    .input-placeholder {
+      margin: 10px 0;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 10px;
+    }
+
+    .button {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 5px;
+      font-size: 12px;
+      width: 80px;
+      text-align: center;
+      transition: background-color 0.2s ease;
+      cursor: pointer;
+    }
+
+    .button:active {
+      background-color: #eee;
+    }
+
+    @media (min-height: 600px) {
+      .container {
+        height: 480px;
+        margin-top: auto;
+        margin-bottom: auto;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div>
+      <div class="top-bar">
+        연결된 휴대전화 없음 🔴 Bluetooth 연결 안 됨 🔵
+      </div>
+
+      <div class="date-section" id="dateSection">
+        <!-- 날짜 자동 삽입 -->
+      </div>
+
+      <div class="weather">
+        <span>🌡️ 24℃</span>
+        <span>💧 68%</span>
+      </div>
+
+      <div class="time-section">
+        <span class="time-label" id="ampm">오전</span>
+        <span id="time">00:00</span>
+      </div>
+
+      <div class="input-placeholder">
+        할 일과 일정을 표시하려면 앱으로 동기화하세요
+      </div>
+    </div>
+
+    <div class="buttons">
+      <div class="button" onclick="onButtonClick('집중 모드')">집중 모드</div>
+      <div class="button" onclick="onButtonClick('알람')">알람</div>
+      <div class="button" onclick="onButtonClick('설정')">설정</div>
+    </div>
+  </div>
+
+  <script>
+    function updateTime() {
+      const now = new Date();
+      let hour = now.getHours();
+      const minute = now.getMinutes().toString().padStart(2, '0');
+      const ampm = hour >= 12 ? '오후' : '오전';
+      hour = hour % 12 || 12;
+      document.getElementById("time").textConte
