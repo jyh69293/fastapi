@@ -101,7 +101,8 @@
 <body>
   <div class="container">
     <div>
-      <div class="top-bar">
+      <!-- 수정된 top-bar: IP 주소 표시 -->
+      <div class="top-bar" id="ipInfo">
         연결된 휴대전화 없음 🔴 Bluetooth 연결 안 됨 🔵
       </div>
 
@@ -125,9 +126,9 @@
         </select>
       </div>
 
- <div class="input-placeholder" onclick="location.href='/tasks'" style="cursor: pointer;">
-  할 일과 일정을 표시하려면 앱으로 동기화하세요
-</div>
+      <div class="input-placeholder" onclick="location.href='tasks.html'" style="cursor: pointer;">
+        할 일과 일정을 표시하려면 앱으로 동기화하세요
+      </div>
     </div>
 
     <div class="buttons">
@@ -171,8 +172,22 @@
       alert(`${name} 버튼이 클릭되었습니다.`);
     }
 
+    function fetchLocalIP() {
+      fetch("/get-local-ip")
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("ipInfo").textContent = `📱 연결된 기기 IP: ${data.local_ip}`;
+        })
+        .catch(() => {
+          document.getElementById("ipInfo").textContent = "❌ 로컬 IP를 불러올 수 없습니다.";
+        });
+    }
+
     setInterval(updateTime, 1000);
-    window.onload = updateTime;
+    window.onload = () => {
+      updateTime();
+      fetchLocalIP();  // IP 가져오기
+    };
   </script>
 </body>
 </html>
