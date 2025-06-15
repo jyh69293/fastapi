@@ -45,6 +45,27 @@ def get_db():
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index2.html", {"request": request})
+#-- json파일로 저장하는 기능 --
+def export_schedules_to_json(db: Session):
+    schedules = db.query(Schedule).all()
+    task_data = [
+        {
+            "id": s.id,
+            "title": s.title,
+            "is_todo": s.is_todo,
+            "is_completed": s.is_completed,
+            "start_time": s.start_time.isoformat(),
+            "end_time": s.end_time.isoformat(),
+            "user_id": s.user_id
+        }
+        for s in schedules
+    ]
+
+    with open(JSON_EXPORT_PATH, "w", encoding="utf-8") as f:
+        json.dump(task_data, f, ensure_ascii=False, indent=2)
+
+
+
 
 @app.get("/tasks", response_class=HTMLResponse)
 async def read_tasks(request: Request):
@@ -120,24 +141,6 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Deleted"}
 
-#-- json파일로 저장하는 기능 --
-def export_schedules_to_json(db: Session):
-    schedules = db.query(Schedule).all()
-    task_data = [
-        {
-            "id": s.id,
-            "title": s.title,
-            "is_todo": s.is_todo,
-            "is_completed": s.is_completed,
-            "start_time": s.start_time.isoformat(),
-            "end_time": s.end_time.isoformat(),
-            "user_id": s.user_id
-        }
-        for s in schedules
-    ]
-
-    with open(JSON_EXPORT_PATH, "w", encoding="utf-8") as f:
-        json.dump(task_data, f, ensure_ascii=False, indent=2)
 
 
 # --- 클라이언트 IP ---
