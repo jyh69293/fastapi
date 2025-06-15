@@ -9,6 +9,8 @@ import os, socket, json, shutil
 
 from models import Base, Schedule, Setting, Alarm
 from database import engine, SessionLocal
+router = APIRouter()
+
 
 # --- 기본 설정 ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
