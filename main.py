@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import os, socket, json, serial
+import os, socket, json
 
 from models import Base, Schedule
 from database import engine, SessionLocal
