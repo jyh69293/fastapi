@@ -1,28 +1,31 @@
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date, datetime
-import os
-import socket
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+import os, socket, json, serial
+
 from models import Base, Schedule
 from database import engine, SessionLocal
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
+# 기본 설정
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = FastAPI()
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 Base.metadata.create_all(bind=engine)
 
-
+# CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발용 전체 허용
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# DB 의존성 주입
 def get_db():
     db = SessionLocal()
     try:
@@ -30,10 +33,12 @@ def get_db():
     finally:
         db.close()
 
+# 루트 페이지
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index2.html", {"request": request})
 
+# 오늘 할 일 및 일정 가져오기
 @app.get("/tasks", response_class=HTMLResponse)
 async def read_tasks(request: Request, db: Session = Depends(get_db)):
     today = date.today()
@@ -51,6 +56,7 @@ async def read_tasks(request: Request, db: Session = Depends(get_db)):
         "today": today.isoformat()
     })
 
+# 일정 등록
 class ScheduleCreate(BaseModel):
     user_id: str
     title: str
@@ -77,10 +83,7 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
     db.refresh(new_schedule)
     return new_schedule
 
-
-from fastapi import HTTPException
-
-# 일정 완료 상태 업데이트 (체크박스)
+# 일정 완료 상태 업데이트
 @app.patch("/schedule/{schedule_id}")
 def update_schedule_completion(schedule_id: int, is_completed: bool, db: Session = Depends(get_db)):
     schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
@@ -100,15 +103,18 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Deleted"}
 
-
-
-
-
-
-
-
-
+# 클라이언트 IP 반환
 @app.get("/get-client-ip")
 async def get_client_ip(request: Request):
     client_host = request.client.host
     return {"client_ip": client_host}
+
+# ✅ 센서 데이터 수신 (아두이노 → 시리얼로 JSON 전송)
+@app.get("/sensor")
+def read_sensor_from_arduino():
+    try:
+        with serial.Serial('/dev/ttyACM0', 9600, timeout=2) as ser:
+            line = ser.readline().decode('utf-8').strip()
+            return json.loads(line)
+    except Exception as e:
+        return {"error": str(e)}
