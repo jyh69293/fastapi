@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>스마트 디바이스 UI</title>
   <style>
-    /* 기존 스타일 유지 */
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -101,16 +100,16 @@
 <body>
   <div class="container">
     <div>
-      <!-- 수정된 top-bar: IP 주소 표시 -->
       <div class="top-bar" id="ipInfo">
         연결된 휴대전화 없음 🔴 Bluetooth 연결 안 됨 🔵
       </div>
 
       <div class="date-section" id="dateSection"></div>
 
-      <div class="weather">
-        <span>🌡️ 24℃</span>
-        <span>💧 68%</span>
+      <div class="weather" id="sensorDisplay">
+        <span id="tempDisplay">🌡️ 온도: --℃</span>
+        <span id="humidDisplay">💧 습도: --%</span>
+        <span id="lightDisplay">💡 조도: --</span>
       </div>
 
       <div class="time-section">
@@ -126,8 +125,7 @@
         </select>
       </div>
 
-<div class="input-placeholder" onclick="location.href='/tasks'" style="cursor: pointer;">
-
+      <div class="input-placeholder" onclick="location.href='/tasks'" style="cursor: pointer;">
         할 일과 일정을 표시하려면 앱으로 동기화하세요
       </div>
     </div>
@@ -173,23 +171,43 @@
       alert(`${name} 버튼이 클릭되었습니다.`);
     }
 
-     function fetchClientIP() {
-    fetch("/get-client-ip")
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("ipInfo").textContent = `🌐 접속자 IP: ${data.client_ip}`;
-      })
-      .catch(() => {
-        document.getElementById("ipInfo").textContent = "❌ 클라이언트 IP 조회 실패";
-      });
-  }
+    function fetchClientIP() {
+      fetch("/get-client-ip")
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("ipInfo").textContent = `🌐 접속자 IP: ${data.client_ip}`;
+        })
+        .catch(() => {
+          document.getElementById("ipInfo").textContent = "❌ 클라이언트 IP 조회 실패";
+        });
+    }
 
-  // ✅ 여기서 하나로 묶기
-  window.onload = () => {
-    updateTime();
-    fetchClientIP();  // 호출 정상화
-    setInterval(updateTime, 1000);
-  };
+    async function fetchSensorData() {
+      try {
+        const res = await fetch("/sensor");
+        const data = await res.json();
+
+        if (data.temperature !== undefined)
+          document.getElementById("tempDisplay").textContent = `🌡️ 온도: ${data.temperature}℃`;
+        if (data.humidity !== undefined)
+          document.getElementById("humidDisplay").textContent = `💧 습도: ${data.humidity}%`;
+        if (data.light !== undefined)
+          document.getElementById("lightDisplay").textContent = `💡 조도: ${data.light}`;
+      } catch (err) {
+        document.getElementById("tempDisplay").textContent = "🌡️ 온도: 오류";
+        document.getElementById("humidDisplay").textContent = "💧 습도: 오류";
+        document.getElementById("lightDisplay").textContent = "💡 조도: 오류";
+        console.error("센서 데이터 불러오기 실패:", err);
+      }
+    }
+
+    window.onload = () => {
+      updateTime();
+      fetchClientIP();
+      fetchSensorData();
+      setInterval(updateTime, 1000);
+      setInterval(fetchSensorData, 5000);
+    };
   </script>
 </body>
 </html>
