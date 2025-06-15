@@ -133,6 +133,7 @@
       e.preventDefault();
       const formData = new FormData(this);
       const data = {
+        user_id: "web_user",
         is_am: formData.get("is_am") === "true",
         hour: parseInt(formData.get("hour")),
         minute: parseInt(formData.get("minute")),
