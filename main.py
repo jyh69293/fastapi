@@ -102,13 +102,30 @@ class ScheduleCreate(BaseModel):
     is_todo: bool
     start_time: datetime
     end_date: str  # YYYY-MM-DD
-
 @app.post("/schedule/")
 def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
     if schedule.is_todo:
         end_time = datetime.strptime(schedule.end_date + " 23:59:00", "%Y-%m-%d %H:%M:%S")
     else:
         end_time = datetime.strptime(schedule.end_date, "%Y-%m-%d %H:%M:%S")
+
+    # 중복 검사
+    existing_schedule = db.query(Schedule).filter(
+        Schedule.title == schedule.title,
+        Schedule.start_time == schedule.start_time
+    ).first()
+
+    if existing_schedule:
+        return {
+            "message": "이미 동일한 일정이 존재합니다.",
+            "id": existing_schedule.id,
+            "title": existing_schedule.title,
+            "start_time": existing_schedule.start_time,
+            "end_time": existing_schedule.end_time,
+            "is_todo": existing_schedule.is_todo,
+            "is_completed": existing_schedule.is_completed,
+            "user_id": existing_schedule.user_id
+        }
 
     new_schedule = Schedule(
         user_id=schedule.user_id,
