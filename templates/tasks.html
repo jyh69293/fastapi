@@ -85,18 +85,19 @@
     <button onclick="addTask()">추가</button>
   </div>
 
-  <!-- ✅ 오늘의 일정 리스트 -->
-  <div id="taskList">
+<div id="taskList">
+  {% if tasks %}
     {% for task in tasks %}
       <div class="task">
-        <input type="checkbox" onchange="toggleComplete({{ task.id }}, this.checked)" {% if task.is_completed %}checked{% endif %}>
-        <span>{{ task.title }}</span>
+        <input type="checkbox" onchange="toggleComplete({{ task.id }}, this.checked)" {% if task.done %}checked{% endif %}>
+        <span>{{ task.name }}</span>
         <button onclick="deleteTask({{ task.id }})">삭제</button>
       </div>
-    {% else %}
-      <p>오늘 일정이 없습니다.</p>
     {% endfor %}
-  </div>
+  {% else %}
+    <p>오늘 등록된 일정이 없습니다.</p>
+  {% endif %}
+</div>
 
   <!-- ✅ 전체 스케줄 ID 리스트 -->
   <h2>📋 전체 스케줄 ID 목록</h2>
