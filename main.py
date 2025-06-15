@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from datetime import date, datetime
 import os, socket, json, shutil
 
-from models import Base, Schedule, Setting  # ← Setting import 추가
+from models import Base, Schedule, Setting
 from database import engine, SessionLocal
 
 # --- 기본 설정 ---
@@ -15,8 +15,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = "static/music"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-#----Json 파일 저장되는경로----
-JSON_FOLDER = os.path.join(BASE_DIR, "Json")  # 대소문자 주의
+# --- JSON 저장 폴더 경로 ---
+JSON_FOLDER = os.path.join(BASE_DIR, "Json")
 os.makedirs(JSON_FOLDER, exist_ok=True)
 JSON_EXPORT_PATH = os.path.join(JSON_FOLDER, "tasks_export.json")
 
@@ -33,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- DB 의존성 주입 ---
+# --- DB 세션 의존성 주입 ---
 def get_db():
     db = SessionLocal()
     try:
@@ -41,11 +41,7 @@ def get_db():
     finally:
         db.close()
 
-# --- 루트 페이지 ---
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    return templates.TemplateResponse("index2.html", {"request": request})
-#-- json파일로 저장하는 기능 --
+# --- JSON 파일 저장 함수 ---
 def export_schedules_to_json(db: Session):
     schedules = db.query(Schedule).all()
     task_data = [
@@ -60,29 +56,25 @@ def export_schedules_to_json(db: Session):
         }
         for s in schedules
     ]
-
     with open(JSON_EXPORT_PATH, "w", encoding="utf-8") as f:
         json.dump(task_data, f, ensure_ascii=False, indent=2)
 
+# --- 루트 페이지 ---
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index2.html", {"request": request})
 
-
-
+# --- HTML 페이지에 오늘의 일정 표시 (JSON 기반) ---
 @app.get("/tasks", response_class=HTMLResponse)
 async def read_tasks(request: Request):
     try:
         with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
             all_tasks = json.load(f)
-    except FileNotFoundError:
-        all_tasks = []
-    except json.JSONDecodeError:
+    except (FileNotFoundError, json.JSONDecodeError):
         all_tasks = []
 
     today_str = date.today().isoformat()
-
-    today_tasks = [
-        task for task in all_tasks
-        if task["start_time"].startswith(today_str)
-    ]
+    today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
 
     return templates.TemplateResponse("tasks.html", {
         "request": request,
@@ -116,9 +108,7 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_schedule)
 
-  
     export_schedules_to_json(db)
-
     return new_schedule
 
 # --- 일정 완료 상태 업데이트 ---
@@ -129,6 +119,7 @@ def update_schedule_completion(schedule_id: int, is_completed: bool, db: Session
         raise HTTPException(status_code=404, detail="Schedule not found")
     schedule.is_completed = is_completed
     db.commit()
+    export_schedules_to_json(db)
     return {"message": "Updated"}
 
 # --- 일정 삭제 ---
@@ -139,11 +130,30 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Schedule not found")
     db.delete(schedule)
     db.commit()
+    export_schedules_to_json(db)
     return {"message": "Deleted"}
 
+# --- JSON API: 오늘의 일정 반환 ---
+@app.get("/api/tasks/today", response_class=JSONResponse)
+def get_today_tasks_from_json():
+    try:
+        with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
+            all_tasks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        raise HTTPException(status_code=500, detail="JSON 파일 오류")
 
+    today_str = date.today().isoformat()
+    today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
+    return today_tasks
 
-# --- 클라이언트 IP ---
+# --- JSON API: 전체 스케줄 ID 반환 ---
+@app.get("/api/schedule-ids")
+def get_schedule_ids(db: Session = Depends(get_db)):
+    schedules = db.query(Schedule.id).all()
+    id_list = [s.id for s in schedules]
+    return {"ids": id_list}
+
+# --- 클라이언트 IP 확인 ---
 @app.get("/get-client-ip")
 async def get_client_ip(request: Request):
     return {"client_ip": request.client.host}
@@ -156,17 +166,14 @@ async def upload_music(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     return {"file_path": f"/{UPLOAD_FOLDER}/{file.filename}"}
 
-# --- 음악 리스트 조회 ---
+# --- 음악 파일 목록 조회 ---
 @app.get("/list-music/")
 async def list_music():
     files = os.listdir(UPLOAD_FOLDER)
     wav_files = [f for f in files if f.endswith(".wav")]
     return JSONResponse(content=wav_files)
 
-# ===========================
-# 👇 설정 API 시작
-# ===========================
-
+# --- 설정 모델 ---
 class SettingSchema(BaseModel):
     key: str
     value: str
@@ -174,6 +181,7 @@ class SettingSchema(BaseModel):
     type: str = "string"
     category: str = None
 
+# --- 설정 저장 ---
 @app.post("/settings")
 def set_setting(setting: SettingSchema, db: Session = Depends(get_db)):
     db_setting = db.query(Setting).filter(Setting.key == setting.key).first()
@@ -188,6 +196,7 @@ def set_setting(setting: SettingSchema, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "설정이 저장되었습니다."}
 
+# --- 특정 설정 가져오기 ---
 @app.get("/settings/{key}")
 def get_setting(key: str, db: Session = Depends(get_db)):
     setting = db.query(Setting).filter(Setting.key == key).first()
@@ -201,29 +210,8 @@ def get_setting(key: str, db: Session = Depends(get_db)):
         }
     raise HTTPException(status_code=404, detail="해당 설정이 없습니다.")
 
+# --- 모든 설정 가져오기 ---
 @app.get("/settings")
 def get_all_settings(db: Session = Depends(get_db)):
     settings = db.query(Setting).all()
     return [{"key": s.key, "value": s.value} for s in settings]
-
-
-@app.get("/api/tasks/today", response_class=JSONResponse)
-def get_today_tasks_from_json():
-    try:
-        with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
-            all_tasks = json.load(f)
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="tasks_export.json 파일이 없습니다.")
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="JSON 파싱 에러가 발생했습니다.")
-
-    today_str = date.today().isoformat()
-
-    today_tasks = [
-        task for task in all_tasks
-        if task["start_time"].startswith(today_str)
-    ]
-
-    return today_tasks
-
-
