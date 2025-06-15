@@ -256,6 +256,11 @@ def get_alarms(user_id: str, db: Session = Depends(get_db)):
     return alarms
 
 
+@app.get("/alarm.html", response_class=HTMLResponse)
+async def read_alarm_page(request: Request):
+    return templates.TemplateResponse("alarm.html", {"request": request})
+
+
 
 
 
