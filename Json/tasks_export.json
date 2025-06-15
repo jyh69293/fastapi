@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "라즈베리파이 점검",
+    "is_todo": true,
+    "is_completed": false,
+    "start_time": "2025-06-15T09:00:00",
+    "end_time": "2025-06-15T23:59:00",
+    "user_id": "test_user"
+  },
+  {
+    "id": 2,
+    "title": "FastAPI 일정 테스트",
+    "is_todo": false,
+    "is_completed": true,
+    "start_time": "2025-06-14T14:00:00",
+    "end_time": "2025-06-14T15:00:00",
+    "user_id": "admin"
+  },
+  {
+    "id": 3,
+    "title": "오늘 회의",
+    "is_todo": false,
+    "is_completed": false,
+    "start_time": "2025-06-15T11:30:00",
+    "end_time": "2025-06-15T12:30:00",
+    "user_id": "user01"
+  }
+]
