@@ -104,7 +104,7 @@
       <div class="weather" id="sensorDisplay">
         <span id="tempDisplay">🌡️ 온도: --℃</span>
         <span id="humidDisplay">💧 습도: --%</span>
-        <span id="lightDisplay">💡 조도: --</span>
+       
       </div>
 
       <div class="time-section">
@@ -161,12 +161,11 @@
           document.getElementById("tempDisplay").textContent = `🌡️ 온도: ${data.temperature}℃`;
         if (data.humidity !== undefined)
           document.getElementById("humidDisplay").textContent = `💧 습도: ${data.humidity}%`;
-        if (data.light !== undefined)
-          document.getElementById("lightDisplay").textContent = `💡 조도: ${data.light}`;
+        
       } catch (err) {
         document.getElementById("tempDisplay").textContent = "🌡️ 온도: 오류";
         document.getElementById("humidDisplay").textContent = "💧 습도: 오류";
-        document.getElementById("lightDisplay").textContent = "💡 조도: 오류";
+  
         console.error("센서 데이터 불러오기 실패:", err);
       }
     }
