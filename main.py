@@ -85,12 +85,13 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
         is_todo=schedule.is_todo,
         start_time=schedule.start_time,
         end_time=end_time
-        
     )
     db.add(new_schedule)
     db.commit()
     db.refresh(new_schedule)
-   export_schedules_to_json(db)
+
+  
+    export_schedules_to_json(db)
 
     return new_schedule
 
