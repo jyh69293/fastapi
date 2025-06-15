@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>알람 목록</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    .alarm-list {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .alarm-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+    .alarm-item:last-child {
+      border-bottom: none;
+    }
+    .alarm-time {
+      font-weight: bold;
+    }
+    .delete-btn {
+      background: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      float: right;
+    }
+  </style>
+</head>
+<body>
+  <h2>저장된 알람 목록</h2>
+  <div class="alarm-list" id="alarmList">
+    <!-- 알람이 여기에 추가됩니다 -->
+  </div>
+
+  <script>
+    function fetchAlarms() {
+      fetch('/api/alarms')
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById('alarmList');
+          container.innerHTML = '';
+          data.forEach(alarm => {
+            const item = document.createElement('div');
+            item.className = 'alarm-item';
+            item.innerHTML = `
+              <div class="alarm-time">${alarm.is_am ? '오전' : '오후'} ${alarm.hour}시 ${alarm.minute}분</div>
+              <div>반복 요일: ${alarm.repeat_days || '없음'}</div>
+              <div>퍼즐 모드: ${alarm.puzzle_mode ? '사용' : '사용 안 함'}</div>
+              <div>음악: ${alarm.music_path.split('/').pop()}</div>
+              <button class="delete-btn" onclick="deleteAlarm(${alarm.id})">삭제</button>
+            `;
+            container.appendChild(item);
+          });
+        });
+    }
+
+    function deleteAlarm(id) {
+      if (confirm("이 알람을 삭제하시겠습니까?")) {
+        fetch(`/api/alarms/${id}`, { method: 'DELETE' })
+          .then(res => res.json())
+          .then(() => {
+            alert("삭제 완료");
+            fetchAlarms();
+          });
+      }
+    }
+
+    fetchAlarms();
+  </script>
+</body>
+</html>
