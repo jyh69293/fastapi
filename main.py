@@ -219,6 +219,16 @@ def get_all_settings(db: Session = Depends(get_db)):
     return [{"key": s.key, "value": s.value} for s in settings]
 
 
+class AlarmCreate(BaseModel):
+    user_id: str
+    hour: int
+    minute: int
+    is_am: bool
+    repeat_days: str = ""
+    music_path: str = None
+    puzzle_mode: bool = False
+
+
 #------------- 알람 관련 api------------------------
 @router.post("/api/alarms")
 def create_alarm(alarm: AlarmCreate, db: Session = Depends(get_db)):
