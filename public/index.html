@@ -112,9 +112,7 @@
         연결된 휴대전화 없음 🔴 Bluetooth 연결 안 됨 🔵
       </div>
 
-      <div class="date-section" id="dateSection">
-        <!-- 날짜 자동 삽입 -->
-      </div>
+      <div class="date-section" id="dateSection"></div>
 
       <div class="weather">
         <span>🌡️ 24℃</span>
@@ -132,9 +130,9 @@
     </div>
 
     <div class="buttons">
-      <div class="button" onclick="onButtonClick('집중 모드')">집중 모드</div>
-      <div class="button" onclick="onButtonClick('알람')">알람</div>
-      <div class="button" onclick="onButtonClick('설정')">설정</div>
+      <div class="button" onclick="location.href='focus.html'">집중 모드</div>
+      <div class="button" onclick="location.href='alarm.html'">알람</div>
+      <div class="button" onclick="location.href='setting.html'">설정</div>
     </div>
   </div>
 
@@ -145,4 +143,20 @@
       const minute = now.getMinutes().toString().padStart(2, '0');
       const ampm = hour >= 12 ? '오후' : '오전';
       hour = hour % 12 || 12;
-      document.getElementById("time").textConte
+      document.getElementById("time").textContent = `${hour}:${minute}`;
+      document.getElementById("ampm").textContent = ampm;
+    }
+
+    function updateDate() {
+      const now = new Date();
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+      const formattedDate = now.toLocaleDateString('ko-KR', options);
+      document.getElementById("dateSection").textContent = formattedDate;
+    }
+
+    updateTime();
+    updateDate();
+    setInterval(updateTime, 1000);
+  </script>
+</body>
+</html>
