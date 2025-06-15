@@ -6,6 +6,13 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import date, datetime
 import os, socket, json, shutil
+from datetime import datetime
+import pytz
+
+KST = pytz.timezone("Asia/Seoul")
+today_str = datetime.now(KST).date().isoformat()
+
+
 
 from models import Base, Schedule, Setting, Alarm
 from database import engine, SessionLocal
