@@ -261,7 +261,7 @@ class AlarmCreate(BaseModel):
 @router.post("/api/alarms")
 def create_alarm(alarm: AlarmCreate, db: Session = Depends(get_db)):
     if not alarm.music_path:
-        alarm.music_path = "static/music/default.mp3"
+        alarm.music_path = "static/music/자명종(나팔 기상).wav"
 
     db_alarm = Alarm(**alarm.dict())
     db.add(db_alarm)
