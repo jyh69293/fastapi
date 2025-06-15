@@ -1,145 +1,217 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>오늘의 일정</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .task {
-      background: white;
-      margin: 10px 0;
-      padding: 12px;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .task span {
-      flex-grow: 1;
-      margin-left: 10px;
-    }
-    .task button {
-      margin-left: 10px;
-      background: #ff4d4d;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-    .add-task {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .add-task input, .add-task button {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-    .add-task button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    .back-button {
-      margin-top: 20px;
-      display: block;
-      text-align: center;
-      color: blue;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <h1>📅 {{ today }} 일정</h1>
+from fastapi import FastAPI, Request, Depends, HTTPException, File, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from datetime import date, datetime
+import os, socket, json, shutil
 
-  <!-- ✅ 일정 추가 폼 -->
-  <div class="add-task">
-    <input type="text" id="newTitle" placeholder="할 일 제목">
-    <input type="datetime-local" id="newTime">
-    <button onclick="addTask()">추가</button>
-  </div>
+from models import Base, Schedule, Setting
+from database import engine, SessionLocal
 
-  <!-- ✅ 오늘의 일정 리스트 -->
-  <div id="taskList">
-    {% if tasks %}
-      {% for task in tasks %}
-        <div class="task">
-          <input type="checkbox" onchange="toggleComplete({{ task.id }}, this.checked)" {% if task.is_completed %}checked{% endif %}>
-          <span {% if task.is_completed %}style="text-decoration: line-through;"{% endif %}>
-            {{ task.title }}
-          </span>
-          <button onclick="deleteTask({{ task.id }})">삭제</button>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p>오늘의 일정이 없습니다.</p>
-    {% endif %}
-  </div>
+# --- 기본 설정 ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = "static/music"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-  <div class="back-button" onclick="history.back()">← 뒤로 가기</div>
+# --- JSON 저장 폴더 경로 ---
+JSON_FOLDER = os.path.join(BASE_DIR, "Json")
+os.makedirs(JSON_FOLDER, exist_ok=True)
+JSON_EXPORT_PATH = os.path.join(JSON_FOLDER, "tasks_export.json")
 
-  <script>
-    function toggleComplete(id, isCompleted) {
-      fetch(`/schedule/${id}?is_completed=${isCompleted}`, {
-        method: "PATCH"
-      }).then(res => {
-        if (!res.ok) alert("업데이트 실패");
-        else location.reload();
-      });
-    }
+app = FastAPI()
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+Base.metadata.create_all(bind=engine)
 
-    function deleteTask(id) {
-      if (!confirm("정말 삭제하시겠습니까?")) return;
-      fetch(`/schedule/${id}`, {
-        method: "DELETE"
-      }).then(res => {
-        if (res.ok) location.reload();
-        else alert("삭제 실패");
-      });
-    }
+# --- CORS 설정 ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    function addTask() {
-      const title = document.getElementById("newTitle").value;
-      const time = document.getElementById("newTime").value;
+# --- DB 세션 의존성 주입 ---
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-      if (!title || !time) {
-        alert("제목과 시간을 입력해주세요.");
-        return;
-      }
+# --- JSON 파일 저장 함수 ---
+def export_schedules_to_json(db: Session):
+    schedules = db.query(Schedule).all()
+    task_data = [
+        {
+            "id": s.id,
+            "title": s.title,
+            "is_todo": s.is_todo,
+            "is_completed": s.is_completed,
+            "start_time": s.start_time.isoformat(),
+            "end_time": s.end_time.isoformat(),
+            "user_id": s.user_id
+        }
+        for s in schedules
+    ]
+    with open(JSON_EXPORT_PATH, "w", encoding="utf-8") as f:
+        json.dump(task_data, f, ensure_ascii=False, indent=2)
 
-      const startTime = new Date(time);
-      const endDate = startTime.toISOString().split("T")[0];
+# --- 루트 페이지 ---
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index2.html", {"request": request})
 
-      fetch("/schedule/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: "web_user",
-          title: title,
-          is_todo: true,
-          start_time: startTime.toISOString(),
-          end_date: endDate
-        })
-      }).then(res => {
-        if (res.ok) location.reload();
-        else alert("추가 실패");
-      });
-    }
-  </script>
-</body>
-</html>
+# --- HTML 페이지에 오늘의 일정 표시 (JSON 기반) ---
+@app.get("/tasks", response_class=HTMLResponse)
+async def read_tasks(request: Request):
+    try:
+        with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
+            all_tasks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        all_tasks = []
+
+    today_str = date.today().isoformat()
+    today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
+
+    return templates.TemplateResponse("tasks.html", {
+        "request": request,
+        "tasks": today_tasks,
+        "today": today_str
+    })
+
+# --- 일정 등록 ---
+class ScheduleCreate(BaseModel):
+    user_id: str
+    title: str
+    is_todo: bool
+    start_time: datetime
+    end_date: str  # YYYY-MM-DD
+
+@app.post("/schedule/")
+def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
+    if schedule.is_todo:
+        end_time = datetime.strptime(schedule.end_date + " 23:59:00", "%Y-%m-%d %H:%M:%S")
+    else:
+        end_time = datetime.strptime(schedule.end_date, "%Y-%m-%d %H:%M:%S")
+
+    new_schedule = Schedule(
+        user_id=schedule.user_id,
+        title=schedule.title,
+        is_todo=schedule.is_todo,
+        start_time=schedule.start_time,
+        end_time=end_time
+    )
+    db.add(new_schedule)
+    db.commit()
+    db.refresh(new_schedule)
+
+    export_schedules_to_json(db)
+    return new_schedule
+
+# --- 일정 완료 상태 업데이트 ---
+@app.patch("/schedule/{schedule_id}")
+def update_schedule_completion(schedule_id: int, is_completed: bool, db: Session = Depends(get_db)):
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    schedule.is_completed = is_completed
+    db.commit()
+    export_schedules_to_json(db)
+    return {"message": "Updated"}
+
+# --- 일정 삭제 ---
+@app.delete("/schedule/{schedule_id}")
+def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
+    schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    db.delete(schedule)
+    db.commit()
+    export_schedules_to_json(db)
+    return {"message": "Deleted"}
+
+# --- JSON API: 오늘의 일정 반환 ---
+@app.get("/api/tasks/today", response_class=JSONResponse)
+def get_today_tasks_from_json():
+    try:
+        with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
+            all_tasks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        raise HTTPException(status_code=500, detail="JSON 파일 오류")
+
+    today_str = date.today().isoformat()
+    today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
+    return today_tasks
+
+# --- JSON API: 전체 스케줄 ID 반환 ---
+@app.get("/api/schedule-ids")
+def get_schedule_ids(db: Session = Depends(get_db)):
+    schedules = db.query(Schedule.id).all()
+    id_list = [s.id for s in schedules]
+    return {"ids": id_list}
+
+# --- 클라이언트 IP 확인 ---
+@app.get("/get-client-ip")
+async def get_client_ip(request: Request):
+    return {"client_ip": request.client.host}
+
+# --- 음악 업로드 ---
+@app.post("/upload-music/")
+async def upload_music(file: UploadFile = File(...)):
+    file_location = os.path.join(UPLOAD_FOLDER, file.filename)
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"file_path": f"/{UPLOAD_FOLDER}/{file.filename}"}
+
+# --- 음악 파일 목록 조회 ---
+@app.get("/list-music/")
+async def list_music():
+    files = os.listdir(UPLOAD_FOLDER)
+    wav_files = [f for f in files if f.endswith(".wav")]
+    return JSONResponse(content=wav_files)
+
+# --- 설정 모델 ---
+class SettingSchema(BaseModel):
+    key: str
+    value: str
+    user_id: str = None
+    type: str = "string"
+    category: str = None
+
+# --- 설정 저장 ---
+@app.post("/settings")
+def set_setting(setting: SettingSchema, db: Session = Depends(get_db)):
+    db_setting = db.query(Setting).filter(Setting.key == setting.key).first()
+    if db_setting:
+        db_setting.value = setting.value
+        db_setting.user_id = setting.user_id
+        db_setting.type = setting.type
+        db_setting.category = setting.category
+    else:
+        db_setting = Setting(**setting.dict())
+        db.add(db_setting)
+    db.commit()
+    return {"message": "설정이 저장되었습니다."}
+
+# --- 특정 설정 가져오기 ---
+@app.get("/settings/{key}")
+def get_setting(key: str, db: Session = Depends(get_db)):
+    setting = db.query(Setting).filter(Setting.key == key).first()
+    if setting:
+        return {
+            "key": setting.key,
+            "value": setting.value,
+            "type": setting.type,
+            "category": setting.category,
+            "user_id": setting.user_id
+        }
+    raise HTTPException(status_code=404, detail="해당 설정이 없습니다.")
+
+# --- 모든 설정 가져오기 ---
+@app.get("/settings")
+def get_all_settings(db: Session = Depends(get_db)):
+    settings = db.query(Setting).all()
+    return [{"key": s.key, "value": s.value} for s in settings]
