@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>설정 페이지</title>
+</head>
+<body>
+  <h2>🎵 알람 음악 선택</h2>
+  <form id="alarmSettingsForm">
+    <label for="musicSelect">음악 파일:</label>
+    <select id="musicSelect" name="musicPath">
+      <option value="">로딩 중...</option>
+    </select>
+    <button type="submit">저장</button>
+  </form>
+
+  <script>
+    // 음악 리스트 불러오기
+    fetch("/list-music/")
+      .then(res => res.json())
+      .then(data => {
+        const select = document.getElementById("musicSelect");
+        select.innerHTML = ""; // 초기화
+        data.forEach(file => {
+          const option = document.createElement("option");
+          option.value = `/static/music/${file}`;
+          option.textContent = file;
+          select.appendChild(option);
+        });
+      });
+
+    // 폼 저장 시 처리
+    document.getElementById("alarmSettingsForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const selectedMusic = document.getElementById("musicSelect").value;
+      localStorage.setItem("selectedMusic", selectedMusic); // 간단하게 저장
+      alert("설정이 저장되었습니다!");
+    });
+  </script>
+</body>
+</html>
