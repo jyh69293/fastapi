@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import date, datetime
@@ -109,10 +109,10 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
     else:
         end_time = datetime.strptime(schedule.end_date, "%Y-%m-%d %H:%M:%S")
 
-    # 중복 검사
+    # 중복 검사 (start_time을 문자열로 변환해서 비교)
     existing_schedule = db.query(Schedule).filter(
         Schedule.title == schedule.title,
-        Schedule.start_time == schedule.start_time
+        func.strftime('%Y-%m-%d %H:%M', Schedule.start_time) == schedule.start_time.strftime('%Y-%m-%d %H:%M')
     ).first()
 
     if existing_schedule:
@@ -140,7 +140,7 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
 
     export_schedules_to_json(db)
     return new_schedule
-
+    
 # --- 일정 완료 상태 업데이트 ---
 @app.patch("/schedule/{schedule_id}")
 def update_schedule_completion(schedule_id: int, is_completed: bool, db: Session = Depends(get_db)):
