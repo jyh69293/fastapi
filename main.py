@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends, HTTPException, File, UploadFile
+from fastapi import FastAPI, Request, Depends, HTTPException, File, UploadFile, APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from datetime import date, datetime
 import os, socket, json, shutil
 
-from models import Base, Schedule, Setting
+from models import Base, Schedule, Setting, Alarm
 from database import engine, SessionLocal
 
 # --- 기본 설정 ---
@@ -215,3 +215,40 @@ def get_setting(key: str, db: Session = Depends(get_db)):
 def get_all_settings(db: Session = Depends(get_db)):
     settings = db.query(Setting).all()
     return [{"key": s.key, "value": s.value} for s in settings]
+
+
+#------------- 알람 관련 api------------------------
+@router.post("/api/alarms")
+def create_alarm(alarm: AlarmCreate, db: Session = Depends(get_db)):
+    if not alarm.music_path:
+        alarm.music_path = "static/music/default.mp3"
+
+    db_alarm = Alarm(**alarm.dict())
+    db.add(db_alarm)
+    db.commit()
+    db.refresh(db_alarm)
+    return {"id": db_alarm.id}
+
+@router.delete("/api/alarms/{alarm_id}")
+def delete_alarm(alarm_id: int, db: Session = Depends(get_db)):
+    alarm = db.query(Alarm).filter(Alarm.id == alarm_id).first()
+    if not alarm:
+        raise HTTPException(status_code=404, detail="Alarm not found")
+    db.delete(alarm)
+    db.commit()
+    return {"message": "Alarm deleted"}
+
+@router.get("/api/alarms")
+def get_alarms(user_id: str, db: Session = Depends(get_db)):
+    alarms = db.query(Alarm).filter(Alarm.user_id == user_id).all()
+    return alarms
+
+
+
+
+
+
+
+
+
+
