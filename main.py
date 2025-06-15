@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from datetime import date, datetime
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import os, socket, json
+import os, socket, json, shutil
+from fastapi.responses import JSONResponse
 
 from models import Base, Schedule
 from database import engine, SessionLocal
@@ -120,3 +121,15 @@ async def upload_music(file: UploadFile = File(...)):
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"file_path": f"/{UPLOAD_FOLDER}/{file.filename}"}
+
+
+
+#음악리스트 제공
+@app.get("/list-music/")
+async def list_music():
+    files = os.listdir(UPLOAD_FOLDER)
+    wav_files = [f for f in files if f.endswith(".wav")]
+    return JSONResponse(content=wav_files)
+
+
+
