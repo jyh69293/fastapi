@@ -155,6 +155,27 @@ def get_today_tasks_from_json():
     today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
     return today_tasks
 
+@app.delete("/schedule/remove-duplicates")
+def remove_duplicate_schedules(db: Session = Depends(get_db)):
+    # 중복을 title + start_time 기준으로 찾기 위한 딕셔너리
+    seen = {}
+    deleted_count = 0
+
+    schedules = db.query(Schedule).order_by(Schedule.id).all()
+    for schedule in schedules:
+        key = (schedule.title, schedule.start_time)
+        if key in seen:
+            # 이미 본 항목이라면 삭제
+            db.delete(schedule)
+            deleted_count += 1
+        else:
+            seen[key] = schedule.id
+
+    db.commit()
+    export_schedules_to_json(db)
+    return {"message": f"{deleted_count}개의 중복 일정이 삭제되었습니다."}
+
+
 # --- JSON API: 전체 스케줄 ID 반환 ---
 @app.get("/api/schedule-ids")
 def get_schedule_ids(db: Session = Depends(get_db)):
