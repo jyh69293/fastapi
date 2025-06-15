@@ -26,3 +26,16 @@ class Setting(Base):
     category = Column(String, nullable=True) # 예: 'alarm', 'ui'
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Alarm(Base):
+    __tablename__ = "alarms"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False)
+    hour = Column(Integer, nullable=False)
+    minute = Column(Integer, nullable=False)
+    is_am = Column(Boolean, nullable=False)
+    repeat_days = Column(String, nullable=True)
+    music_path = Column(String, nullable=True)
+    puzzle_mode = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
