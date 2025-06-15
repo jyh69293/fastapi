@@ -30,26 +30,45 @@
     .alarm-time {
       font-weight: bold;
     }
-    .delete-btn {
-      background: #ff4d4d;
-      border: none;
+    .btn-group {
+      margin-top: 5px;
+    }
+    .btn {
+      background: #4CAF50;
       color: white;
       padding: 5px 10px;
+      margin-right: 5px;
+      border: none;
       border-radius: 5px;
       cursor: pointer;
-      float: right;
+    }
+    .btn.delete {
+      background: #ff4d4d;
+    }
+    .edit-form {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f1f1f1;
+      border-radius: 8px;
+      display: none;
+    }
+    .edit-form input, .edit-form select {
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 10px;
+      padding: 5px;
     }
   </style>
 </head>
 <body>
   <h2>저장된 알람 목록</h2>
-  <div class="alarm-list" id="alarmList">
-    <!-- 알람이 여기에 추가됩니다 -->
-  </div>
+  <div class="alarm-list" id="alarmList"></div>
 
   <script>
+    const userId = localStorage.getItem("user_id") || "web_user"; // 필요시 수정
+
     function fetchAlarms() {
-      fetch('/api/alarms')
+      fetch(`/api/alarms?user_id=${userId}`)
         .then(res => res.json())
         .then(data => {
           const container = document.getElementById('alarmList');
@@ -62,7 +81,22 @@
               <div>반복 요일: ${alarm.repeat_days || '없음'}</div>
               <div>퍼즐 모드: ${alarm.puzzle_mode ? '사용' : '사용 안 함'}</div>
               <div>음악: ${alarm.music_path.split('/').pop()}</div>
-              <button class="delete-btn" onclick="deleteAlarm(${alarm.id})">삭제</button>
+              <div class="btn-group">
+                <button class="btn" onclick="toggleEditForm(${alarm.id})">수정</button>
+                <button class="btn delete" onclick="deleteAlarm(${alarm.id})">삭제</button>
+              </div>
+              <div class="edit-form" id="edit-${alarm.id}">
+                <select id="edit-am-${alarm.id}">
+                  <option value="true" ${alarm.is_am ? 'selected' : ''}>오전</option>
+                  <option value="false" ${!alarm.is_am ? 'selected' : ''}>오후</option>
+                </select>
+                <input type="number" id="edit-hour-${alarm.id}" min="0" max="12" value="${alarm.hour}" />
+                <input type="number" id="edit-minute-${alarm.id}" min="0" max="59" value="${alarm.minute}" />
+                <input type="text" id="edit-repeat-${alarm.id}" value="${alarm.repeat_days}" placeholder="월,화,수..." />
+                <input type="text" id="edit-music-${alarm.id}" value="${alarm.music_path}" />
+                <label><input type="checkbox" id="edit-puzzle-${alarm.id}" ${alarm.puzzle_mode ? 'checked' : ''} /> 퍼즐 모드</label>
+                <button class="btn" onclick="saveEdit(${alarm.id})">저장</button>
+              </div>
             `;
             container.appendChild(item);
           });
@@ -72,12 +106,38 @@
     function deleteAlarm(id) {
       if (confirm("이 알람을 삭제하시겠습니까?")) {
         fetch(`/api/alarms/${id}`, { method: 'DELETE' })
-          .then(res => res.json())
           .then(() => {
-            alert("삭제 완료");
+            alert("삭제되었습니다.");
             fetchAlarms();
           });
       }
+    }
+
+    function toggleEditForm(id) {
+      const form = document.getElementById(`edit-${id}`);
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function saveEdit(id) {
+      const data = {
+        is_am: document.getElementById(`edit-am-${id}`).value === "true",
+        hour: parseInt(document.getElementById(`edit-hour-${id}`).value),
+        minute: parseInt(document.getElementById(`edit-minute-${id}`).value),
+        repeat_days: document.getElementById(`edit-repeat-${id}`).value,
+        music_path: document.getElementById(`edit-music-${id}`).value,
+        puzzle_mode: document.getElementById(`edit-puzzle-${id}`).checked
+      };
+
+      fetch(`/api/alarms/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(() => {
+        alert("수정 완료");
+        fetchAlarms();
+      });
     }
 
     fetchAlarms();
