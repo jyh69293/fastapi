@@ -80,10 +80,13 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(get_db)):
         is_todo=schedule.is_todo,
         start_time=schedule.start_time,
         end_time=end_time
+        
     )
     db.add(new_schedule)
     db.commit()
     db.refresh(new_schedule)
+   export_schedules_to_json(db)
+
     return new_schedule
 
 # --- 일정 완료 상태 업데이트 ---
@@ -105,6 +108,26 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
     db.delete(schedule)
     db.commit()
     return {"message": "Deleted"}
+
+#-- json파일로 저장하는 기능 --
+def export_schedules_to_json(db: Session):
+    schedules = db.query(Schedule).all()
+    task_data = [
+        {
+            "id": s.id,
+            "title": s.title,
+            "is_todo": s.is_todo,
+            "is_completed": s.is_completed,
+            "start_time": s.start_time.isoformat(),
+            "end_time": s.end_time.isoformat(),
+            "user_id": s.user_id
+        }
+        for s in schedules
+    ]
+
+    with open(JSON_EXPORT_PATH, "w", encoding="utf-8") as f:
+        json.dump(task_data, f, ensure_ascii=False, indent=2)
+
 
 # --- 클라이언트 IP ---
 @app.get("/get-client-ip")
@@ -168,3 +191,6 @@ def get_setting(key: str, db: Session = Depends(get_db)):
 def get_all_settings(db: Session = Depends(get_db)):
     settings = db.query(Setting).all()
     return [{"key": s.key, "value": s.value} for s in settings]
+
+
+
