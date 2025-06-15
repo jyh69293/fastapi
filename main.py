@@ -15,6 +15,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = "static/music"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+#----Json 파일 저장되는경로----
+JSON_FOLDER = os.path.join(BASE_DIR, "Json")  # 대소문자 주의
+os.makedirs(JSON_FOLDER, exist_ok=True)
+JSON_EXPORT_PATH = os.path.join(JSON_FOLDER, "tasks_export.json")
+
 app = FastAPI()
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 Base.metadata.create_all(bind=engine)
