@@ -309,6 +309,40 @@ def get_alarms(user_id: str, db: Session = Depends(get_db)):
 async def read_alarm_page(request: Request):
     return templates.TemplateResponse("alarm.html", {"request": request})
 
+# --- 알람 수정 모델 ---
+class AlarmUpdate(BaseModel):
+    is_am: bool
+    hour: int
+    minute: int
+    repeat_days: str
+    music_path: str
+    puzzle_mode: bool
+
+# --- 알람 수정 API ---
+@router.put("/api/alarms/{alarm_id}")
+def update_alarm(alarm_id: int, alarm_data: AlarmUpdate, db: Session = Depends(get_db)):
+    alarm = db.query(Alarm).filter(Alarm.id == alarm_id).first()
+    if not alarm:
+        raise HTTPException(status_code=404, detail="Alarm not found")
+
+    alarm.is_am = alarm_data.is_am
+    alarm.hour = alarm_data.hour
+    alarm.minute = alarm_data.minute
+    alarm.repeat_days = alarm_data.repeat_days
+    alarm.music_path = alarm_data.music_path
+    alarm.puzzle_mode = alarm_data.puzzle_mode
+
+    db.commit()
+    db.refresh(alarm)
+    return {"message": "Alarm updated", "id": alarm.id}
+
+# --- 알람 목록 HTML 페이지 라우터 ---
+@app.get("/alarm_list.html", response_class=HTMLResponse)
+async def read_alarm_list_page(request: Request):
+    return templates.TemplateResponse("alarm_list.html", {"request": request})
+
+# --- 라우터 등록 ---
+app.include_router(router)
 
 
 
