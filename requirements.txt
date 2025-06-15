@@ -30,3 +30,4 @@ watchgod==0.8.2
 websockets==15.0.1
 aiofiles==24.1.0           # 파일 업로드 처리할 경우
 SQLAlchemy==2.0.41         # ORM 사용 시
+pytz==2022.7.1

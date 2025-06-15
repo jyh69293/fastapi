@@ -6,6 +6,13 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import date, datetime
 import os, socket, json, shutil
+from datetime import datetime
+import pytz
+
+KST = pytz.timezone("Asia/Seoul")
+today_str = datetime.now(KST).date().isoformat()
+
+
 
 from models import Base, Schedule, Setting, Alarm
 from database import engine, SessionLocal
@@ -75,7 +82,7 @@ async def read_tasks(request: Request):
     except (FileNotFoundError, json.JSONDecodeError):
         all_tasks = []
 
-    today_str = date.today().isoformat()
+    today_str = datetime.now(KST).date().isoformat()
     today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
 
     return templates.TemplateResponse("tasks.html", {
@@ -144,7 +151,7 @@ def get_today_tasks_from_json():
     except (FileNotFoundError, json.JSONDecodeError):
         raise HTTPException(status_code=500, detail="JSON 파일 오류")
 
-    today_str = date.today().isoformat()
+    today_str = datetime.now(KST).date().isoformat()
     today_tasks = [task for task in all_tasks if task["start_time"].startswith(today_str)]
     return today_tasks
 
