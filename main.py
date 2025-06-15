@@ -26,6 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+
 # DB 의존성 주입
 def get_db():
     db = SessionLocal()
@@ -104,6 +107,10 @@ def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Deleted"}
 
+
+
+
+
 # 클라이언트 IP 반환
 @app.get("/get-client-ip")
 async def get_client_ip(request: Request):
@@ -130,6 +137,21 @@ async def list_music():
     files = os.listdir(UPLOAD_FOLDER)
     wav_files = [f for f in files if f.endswith(".wav")]
     return JSONResponse(content=wav_files)
+
+
+#setting 등록
+class Setting(Base):
+    __tablename__ = "settings"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=True)
+    key = Column(String, nullable=False)
+    value = Column(String, nullable=False)
+    type = Column(String, default="string")  # string, int, bool 등
+    category = Column(String, nullable=True) # 예: 'alarm', 'ui'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 
 
 
