@@ -61,6 +61,7 @@
       font-size: 11px;
       color: #666;
       text-align: center;
+      cursor: pointer;
     }
     .buttons {
       display: flex;
@@ -81,6 +82,21 @@
     .button:active {
       background-color: #eee;
     }
+    #alarmPopup {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff9d6;
+      color: #333;
+      padding: 15px 20px;
+      border: 2px solid #f0c040;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      z-index: 9999;
+      font-size: 14px;
+    }
     @media (min-height: 600px) {
       .container {
         height: 480px;
@@ -98,31 +114,31 @@
       <div class="top-bar" id="ipInfo">
         연결된 휴대전화 없음 🔴 Bluetooth 연결 안 됨 🔵
       </div>
-
       <div class="date-section" id="dateSection"></div>
-
       <div class="weather" id="sensorDisplay">
         <span id="tempDisplay">🌡️ 온도: --℃</span>
         <span id="humidDisplay">💧 습도: --%</span>
-       
       </div>
-
       <div class="time-section">
         <span class="time-label" id="ampm">오전</span>
         <span id="time">00:00</span>
       </div>
-
-      <div class="input-placeholder" onclick="location.href='/tasks'" style="cursor: pointer;">
+      <div class="input-placeholder" onclick="location.href='/tasks'">
         할 일과 일정을 표시하려면 앱으로 동기화하세요
       </div>
     </div>
-<div class="buttons">
-  <div class="button" onclick="location.href='focus.html'">집중 모드</div>
-  <div class="button" onclick="location.href='alarm_list.html'">알람</div>
-</div>
+    <div class="buttons">
+      <div class="button" onclick="location.href='focus.html'">집중 모드</div>
+      <div class="button" onclick="location.href='alarm_list.html'">알람</div>
+    </div>
   </div>
 
+  <!-- 알림 팝업 -->
+  <div id="alarmPopup">알람이 울립니다!</div>
+
   <script>
+    let alarms = [];
+
     function updateTime() {
       const now = new Date();
       let hour = now.getHours();
@@ -159,13 +175,46 @@
           document.getElementById("tempDisplay").textContent = `🌡️ 온도: ${data.temperature}℃`;
         if (data.humidity !== undefined)
           document.getElementById("humidDisplay").textContent = `💧 습도: ${data.humidity}%`;
-        
       } catch (err) {
         document.getElementById("tempDisplay").textContent = "🌡️ 온도: 오류";
         document.getElementById("humidDisplay").textContent = "💧 습도: 오류";
-  
         console.error("센서 데이터 불러오기 실패:", err);
       }
+    }
+
+    function loadAlarms() {
+      fetch("/api/alarms?user_id=web_user")
+        .then(res => res.json())
+        .then(data => { alarms = data; });
+    }
+
+    function showAlarmPopup(message) {
+      const popup = document.getElementById("alarmPopup");
+      popup.textContent = message;
+      popup.style.display = "block";
+      setTimeout(() => {
+        popup.style.display = "none";
+      }, 10000);
+    }
+
+    function checkAndPlayAlarm() {
+      const now = new Date();
+      let hour = now.getHours();
+      const minute = now.getMinutes();
+      const isAM = hour < 12;
+      const hour12 = hour % 12 || 12;
+
+      alarms.forEach(alarm => {
+        if (
+          alarm.is_am === isAM &&
+          alarm.hour === hour12 &&
+          alarm.minute === minute
+        ) {
+          const audio = new Audio(alarm.music_path || "/static/music/default.mp3");
+          audio.play();
+          showAlarmPopup(`⏰ ${alarm.hour}:${alarm.minute} 알람이 울립니다!`);
+        }
+      });
     }
 
     window.onload = () => {
@@ -173,8 +222,10 @@
       updateDate();
       fetchClientIP();
       fetchSensorData();
+      loadAlarms();
       setInterval(updateTime, 1000);
       setInterval(fetchSensorData, 5000);
+      setInterval(checkAndPlayAlarm, 60000); // 매 분마다 알람 확인
     };
   </script>
 </body>
