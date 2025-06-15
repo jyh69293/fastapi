@@ -46,22 +46,27 @@ def get_db():
 async def read_root(request: Request):
     return templates.TemplateResponse("index2.html", {"request": request})
 
-# --- 오늘 일정/할 일 가져오기 ---
 @app.get("/tasks", response_class=HTMLResponse)
-async def read_tasks(request: Request, db: Session = Depends(get_db)):
-    today = date.today()
-    today_start = datetime.combine(today, datetime.min.time())
-    today_end = datetime.combine(today, datetime.max.time())
+async def read_tasks(request: Request):
+    try:
+        with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
+            all_tasks = json.load(f)
+    except FileNotFoundError:
+        all_tasks = []
+    except json.JSONDecodeError:
+        all_tasks = []
 
-    schedules = db.query(Schedule).filter(
-        Schedule.start_time >= today_start,
-        Schedule.start_time <= today_end
-    ).all()
+    today_str = date.today().isoformat()
+
+    today_tasks = [
+        task for task in all_tasks
+        if task["start_time"].startswith(today_str)
+    ]
 
     return templates.TemplateResponse("tasks.html", {
         "request": request,
-        "tasks": schedules,
-        "today": today.isoformat()
+        "tasks": today_tasks,
+        "today": today_str
     })
 
 # --- 일정 등록 ---
