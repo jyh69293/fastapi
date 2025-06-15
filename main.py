@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request, Depends, HTTPException, File, UploadFile, 
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import date, datetime
@@ -30,6 +32,8 @@ os.makedirs(JSON_FOLDER, exist_ok=True)
 JSON_EXPORT_PATH = os.path.join(JSON_FOLDER, "tasks_export.json")
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 Base.metadata.create_all(bind=engine)
 
