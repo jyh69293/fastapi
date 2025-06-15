@@ -7,7 +7,7 @@ anyio==3.7.1
 # 기타 의존성은 동일하게 유지
 certifi==2025.6.15
 charset-normalizer==3.4.2
-click==8.2.1
+click==8.1.7
 dnspython==2.7.0
 email-validator==2.2.0
 h11==0.16.0
