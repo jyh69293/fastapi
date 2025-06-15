@@ -109,12 +109,3 @@ async def get_client_ip(request: Request):
     client_host = request.client.host
     return {"client_ip": client_host}
 
-# ✅ 센서 데이터 수신 (아두이노 → 시리얼로 JSON 전송)
-@app.get("/sensor")
-def read_sensor_from_arduino():
-    try:
-        with serial.Serial('/dev/ttyACM0', 9600, timeout=2) as ser:
-            line = ser.readline().decode('utf-8').strip()
-            return json.loads(line)
-    except Exception as e:
-        return {"error": str(e)}
