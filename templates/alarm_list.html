@@ -58,17 +58,43 @@
       margin-bottom: 10px;
       padding: 5px;
     }
+    .day-checkboxes label {
+      display: inline-block;
+      margin-right: 5px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
   <h2>저장된 알람 목록</h2>
-  <div style="text-align: center; margin-bottom: 10px;">
-  <button onclick="location.href='alarm.html'" style="padding: 6px 12px; font-size: 14px; border-radius: 6px;">+ 알람 추가</button>
-</div>
+  <div style="text-align:center; margin-bottom: 10px;">
+    <button onclick="location.href='alarm.html'" class="btn">+ 알람 추가</button>
+  </div>
   <div class="alarm-list" id="alarmList"></div>
 
   <script>
-    const userId = localStorage.getItem("user_id") || "web_user"; // 필요시 수정
+    const userId = "web_user"; // 필요에 따라 동적으로 바꿔도 됨
+    let musicList = [];
+
+    // 음악 목록 미리 불러오기
+    fetch("/list-music")
+      .then(res => res.json())
+      .then(data => {
+        musicList = data;
+      });
+
+    function populateMusicDropdown(id, selectedPath) {
+      const select = document.getElementById(`edit-music-${id}`);
+      select.innerHTML = "";
+      musicList.forEach(name => {
+        const fullPath = `/static/music/${name}`;
+        const option = document.createElement("option");
+        option.value = fullPath;
+        option.textContent = name;
+        if (fullPath === selectedPath) option.selected = true;
+        select.appendChild(option);
+      });
+    }
 
     function fetchAlarms() {
       fetch(`/api/alarms?user_id=${userId}`)
@@ -83,9 +109,9 @@
               <div class="alarm-time">${alarm.is_am ? '오전' : '오후'} ${alarm.hour}시 ${alarm.minute}분</div>
               <div>반복 요일: ${alarm.repeat_days || '없음'}</div>
               <div>퍼즐 모드: ${alarm.puzzle_mode ? '사용' : '사용 안 함'}</div>
-              <div>음악: ${alarm.music_path.split('/').pop()}</div>
+              <div>음악: ${alarm.music_path ? alarm.music_path.split('/').pop() : '없음'}</div>
               <div class="btn-group">
-                <button class="btn" onclick="toggleEditForm(${alarm.id})">수정</button>
+                <button class="btn" onclick="toggleEditForm(${alarm.id}, '${alarm.music_path}')">수정</button>
                 <button class="btn delete" onclick="deleteAlarm(${alarm.id})">삭제</button>
               </div>
               <div class="edit-form" id="edit-${alarm.id}">
@@ -93,11 +119,23 @@
                   <option value="true" ${alarm.is_am ? 'selected' : ''}>오전</option>
                   <option value="false" ${!alarm.is_am ? 'selected' : ''}>오후</option>
                 </select>
+
                 <input type="number" id="edit-hour-${alarm.id}" min="0" max="12" value="${alarm.hour}" />
                 <input type="number" id="edit-minute-${alarm.id}" min="0" max="59" value="${alarm.minute}" />
-                <input type="text" id="edit-repeat-${alarm.id}" value="${alarm.repeat_days}" placeholder="월,화,수..." />
-                <input type="text" id="edit-music-${alarm.id}" value="${alarm.music_path}" />
-                <label><input type="checkbox" id="edit-puzzle-${alarm.id}" ${alarm.puzzle_mode ? 'checked' : ''} /> 퍼즐 모드</label>
+
+                <div id="edit-days-${alarm.id}" class="day-checkboxes">
+                  ${['월','화','수','목','금','토','일'].map(day => `
+                    <label>
+                      <input type="checkbox" value="${day}" ${alarm.repeat_days?.includes(day) ? 'checked' : ''}>${day}
+                    </label>
+                  `).join('')}
+                </div>
+
+                <select id="edit-music-${alarm.id}"></select>
+
+                <label>
+                  <input type="checkbox" id="edit-puzzle-${alarm.id}" ${alarm.puzzle_mode ? 'checked' : ''} /> 퍼즐 모드
+                </label>
                 <button class="btn" onclick="saveEdit(${alarm.id})">저장</button>
               </div>
             `;
@@ -110,23 +148,28 @@
       if (confirm("이 알람을 삭제하시겠습니까?")) {
         fetch(`/api/alarms/${id}`, { method: 'DELETE' })
           .then(() => {
-            alert("삭제되었습니다.");
+            alert("삭제 완료");
             fetchAlarms();
           });
       }
     }
 
-    function toggleEditForm(id) {
+    function toggleEditForm(id, selectedPath) {
       const form = document.getElementById(`edit-${id}`);
       form.style.display = form.style.display === 'none' ? 'block' : 'none';
+      populateMusicDropdown(id, selectedPath);
     }
 
     function saveEdit(id) {
+      const days = Array.from(document.querySelectorAll(`#edit-days-${id} input:checked`))
+                        .map(el => el.value)
+                        .join(",");
+
       const data = {
         is_am: document.getElementById(`edit-am-${id}`).value === "true",
         hour: parseInt(document.getElementById(`edit-hour-${id}`).value),
         minute: parseInt(document.getElementById(`edit-minute-${id}`).value),
-        repeat_days: document.getElementById(`edit-repeat-${id}`).value,
+        repeat_days: days,
         music_path: document.getElementById(`edit-music-${id}`).value,
         puzzle_mode: document.getElementById(`edit-puzzle-${id}`).checked
       };
