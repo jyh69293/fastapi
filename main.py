@@ -199,4 +199,23 @@ def get_all_settings(db: Session = Depends(get_db)):
     return [{"key": s.key, "value": s.value} for s in settings]
 
 
+@app.get("/api/tasks/today", response_class=JSONResponse)
+def get_today_tasks_from_json():
+    try:
+        with open(JSON_EXPORT_PATH, "r", encoding="utf-8") as f:
+            all_tasks = json.load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="tasks_export.json 파일이 없습니다.")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="JSON 파싱 에러가 발생했습니다.")
+
+    today_str = date.today().isoformat()
+
+    today_tasks = [
+        task for task in all_tasks
+        if task["start_time"].startswith(today_str)
+    ]
+
+    return today_tasks
+
 
