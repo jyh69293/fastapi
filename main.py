@@ -169,7 +169,7 @@ async def upload_music(file: UploadFile = File(...)):
     return {"file_path": f"/{UPLOAD_FOLDER}/{file.filename}"}
 
 # --- 음악 파일 목록 조회 ---
-@app.get("/list-music/")
+@app.get("/list-music")
 async def list_music():
     files = os.listdir(UPLOAD_FOLDER)
     wav_files = [f for f in files if f.endswith(".wav")]
