@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>알람 설정</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f1f1;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .checkbox-group label {
+      font-weight: normal;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>알람 설정</h2>
+  <form id="alarmForm">
+    <label>오전 / 오후</label>
+    <select name="is_am" required>
+      <option value="true">오전 (AM)</option>
+      <option value="false">오후 (PM)</option>
+    </select>
+
+    <label>시</label>
+    <input type="number" name="hour" min="0" max="12" required />
+
+    <label>분</label>
+    <input type="number" name="minute" min="0" max="59" required />
+
+    <label>반복 요일</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="repeat_days" value="월">월</label>
+      <label><input type="checkbox" name="repeat_days" value="화">화</label>
+      <label><input type="checkbox" name="repeat_days" value="수">수</label>
+      <label><input type="checkbox" name="repeat_days" value="목">목</label>
+      <label><input type="checkbox" name="repeat_days" value="금">금</label>
+      <label><input type="checkbox" name="repeat_days" value="토">토</label>
+      <label><input type="checkbox" name="repeat_days" value="일">일</label>
+    </div>
+
+    <label>알람 음악</label>
+    <select name="music_path" id="musicSelect">
+      <option value="">기본 음악</option>
+      <!-- JS에서 서버의 음악 리스트로 동적 추가 -->
+    </select>
+
+    <label><input type="checkbox" name="puzzle_mode"> 퍼즐 알람 사용</label>
+
+    <button type="submit">저장</button>
+  </form>
+
+  <script>
+    // 음악 목록 동기화
+    fetch('/static/music/')
+      .then(response => response.text())
+      .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const links = Array.from(doc.querySelectorAll('a'));
+        const musicSelect = document.getElementById('musicSelect');
+        links.forEach(link => {
+          const name = link.textContent;
+          if (name.endsWith('.mp3')) {
+            const option = document.createElement('option');
+            option.value = '/static/music/' + name;
+            option.textContent = name;
+            musicSelect.appendChild(option);
+          }
+        });
+      });
+
+    // 폼 전송
+    document.getElementById("alarmForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+      const data = {
+        is_am: formData.get("is_am") === "true",
+        hour: parseInt(formData.get("hour")),
+        minute: parseInt(formData.get("minute")),
+        repeat_days: Array.from(formData.getAll("repeat_days")).join(","),
+        music_path: formData.get("music_path") || "/static/music/default.mp3",
+        puzzle_mode: formData.get("puzzle_mode") === "on"
+      };
+
+      fetch("/api/alarms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(result => {
+        alert("알람이 저장되었습니다!");
+        location.reload();
+      })
+      .catch(err => {
+        alert("알람 저장 실패");
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>
