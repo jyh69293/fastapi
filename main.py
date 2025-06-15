@@ -109,3 +109,14 @@ async def get_client_ip(request: Request):
     client_host = request.client.host
     return {"client_ip": client_host}
 
+
+#음악 설정
+UPLOAD_FOLDER = "static/music"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.post("/upload-music/")
+async def upload_music(file: UploadFile = File(...)):
+    file_location = os.path.join(UPLOAD_FOLDER, file.filename)
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"file_path": f"/{UPLOAD_FOLDER}/{file.filename}"}
