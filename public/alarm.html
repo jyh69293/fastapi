@@ -1,0 +1,14 @@
+<audio id="alarmSound" controls autoplay>
+  <source id="musicSource" type="audio/wav">
+  브라우저가 오디오를 지원하지 않습니다.
+</audio>
+
+<script>
+  const selectedMusic = localStorage.getItem("selectedMusic");
+  if (selectedMusic) {
+    document.getElementById("musicSource").src = selectedMusic;
+    document.getElementById("alarmSound").load();
+  } else {
+    alert("음악이 설정되지 않았습니다.");
+  }
+</script>
